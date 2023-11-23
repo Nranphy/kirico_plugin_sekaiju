@@ -6,7 +6,7 @@
 
 另外需在 Message 类中添加 adapter_name 字段。
 
-上述操作可通过 add_message_change 函数完成。
+上述操作可通过 add_message_change 函数完成，详细请参考相关函数文档。
 '''
 
 from typing import (
