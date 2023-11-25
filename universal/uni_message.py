@@ -25,7 +25,7 @@ from pathlib import Path
 from io import BytesIO
 from PIL import Image
 
-from nonebot.internal.adapter import Adapter, Message, MessageSegment
+from nonebot.internal.adapter import Adapter, Message, MessageSegment, Bot
 
 from ..utils import (
     path_to_url,
@@ -290,21 +290,47 @@ class UniMessage(List[UniMessageSegment]):
         self.origin_message = origin_message
 
     @staticmethod
-    def generate(adapter_name: str, origin_message: Union[Message, MessageSegment]):
+    def generate(
+        adapter: Union[str, Adapter, Type[Adapter]],
+        origin_message: Union[Message, MessageSegment],
+        **kwargs
+    ):
+        """
+        通过原 Message 与 Bot 构造 UniMessage 对象。
+
+        :param adapter: 原 Message 所对应的 adapter 类或实例，或对应名称字符串。
+        :param origin_message: 原 Message 或 MessageSegment 实例。
+        :return: 构造完成的 UniMessage 对象。
+        """
+        if isinstance(adapter, str):
+            adapter_name = adapter
+        else:
+            adapter_name = adapter.get_name()
         if not (generate_func := GENERATE_MAPPING.get(adapter_name)):
             raise ValueError(f"适配器 {adapter_name} 未设定 UniMessage 生成方法。")
         if isinstance(origin_message, MessageSegment):
             origin_message = cast(Type[Message], origin_message.get_message_class())(origin_message)
-        return generate_func(origin_message)
+        return generate_func(origin_message, **kwargs)
 
-    def export(self, adapter_name: str) -> Message:
+    def export(self, adapter: Union[str, Adapter, Type[Adapter]], **kwargs) -> Message:
+        """
+        通过目标 Bot 实例构造 UniMessage 对象。
+
+        :param adapter: 目标 Message 所对应的 adapter 类或实例，或对应名称字符串。
+        :return: 构造完成的目标 Message 对象。
+        """
+        if isinstance(adapter, str):
+            adapter_name = adapter
+        else:
+            adapter_name = adapter.get_name()
         if not (export_func := EXPORT_MAPPING.get(adapter_name)):
             raise ValueError(f"适配器 {adapter_name} 未设定 UniMessage 导出方法。")
-        return export_func(self)
+        return export_func(self, **kwargs)
 
 
 TM = TypeVar("TM", bound = Message)
 
+# TODO 完善此处 Any 类型标注
 GENERATE_MAPPING: dict[str, Callable[[Any], UniMessage]] = {}
 '''存放各适配器对应 Message 转换 UniMessage 的方法'''
 
@@ -333,7 +359,9 @@ def add_message_change(
 def convert_message(
         message: Union[Message, MessageSegment, UniMessage],
         origin_adapter: Optional[Union[str, Adapter, Type[Adapter]]] = None,
-        target_adapter: Optional[Union[str, Adapter, Type[Adapter]]] = None
+        target_adapter: Optional[Union[str, Adapter, Type[Adapter]]] = None,
+        from_origin_kwargs: dict[str, Any] = {},
+        to_target_kwargs: dict[str, Any] = {}
     ) -> Union[Message, UniMessage]:
     """
     将给定消息转化为目标形式。
@@ -341,6 +369,8 @@ def convert_message(
     :param message: 需要转化的消息。
     :param origin_adapter: 原消息适配器类、实例或名称。留空则代表从 UniMessage 导出。
     :param target_adapter: 目标消息适配器类、实例或名称。留空则代表构造为 UniMessage.
+    :param from_origin_kwargs: 将原消息转化为 UniMessage 时传入对应转换函数的额外参数。
+    :param to_target_kwargs: 将 UniMessage 导出为目标消息时传入对应转换函数的额外参数。
 
     origin_adapter 与 target_adapter 需要至少有一个不为 None.
     """
@@ -369,18 +399,22 @@ def convert_message(
     
     if origin_adapter_name is not None and target_adapter_name is None:
         if isinstance(message, Message) or isinstance(message, MessageSegment):
-            return UniMessage.generate(origin_adapter_name, message)
+            return UniMessage.generate(origin_adapter_name, message, **from_origin_kwargs)
         else:
             raise ValueError("由于需要转化为 UniMessage，参数 massage 应该为 Message 或 MessageSegment 对象。")
     
     if origin_adapter_name is None and target_adapter_name is not None:
         if isinstance(message, UniMessage):
-            return message.export(target_adapter_name)
+            return message.export(target_adapter_name, **to_target_kwargs)
         else:
             raise ValueError("由于需要导出为 Message，参数 massage 应该为 UniMessage 类对象。")
 
     if (isinstance(message, Message) or isinstance(message, MessageSegment)):
-        return UniMessage.generate(cast(str, origin_adapter_name), message).export(cast(str, target_adapter_name))
+        return UniMessage.generate(
+            cast(str, origin_adapter_name),
+            message,
+            **from_origin_kwargs
+        ).export(cast(str, target_adapter_name), **to_target_kwargs)
     else:
         raise ValueError("由于需要转换 Message，参数 message 应该为 Message 或 MessageSegment 对象。")
 
