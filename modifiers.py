@@ -185,7 +185,13 @@ class MatcherModifier(Modifier):
                 msg_adapter = cast(str, getattr(message, "adapter_name"))
                 target_adapter = current_bot.get().adapter.get_name()
                 if msg_adapter != target_adapter:
-                    message = cast(Message, convert_message(message, msg_adapter, target_adapter))
+                    bot = current_bot.get()
+                    message = cast(Message, convert_message(
+                        message=message,
+                        origin_adapter=msg_adapter,
+                        target_adapter=target_adapter,
+                        target_bot=bot
+                    ))
             return await func(cls, message, **kwargs)
         return inner
 

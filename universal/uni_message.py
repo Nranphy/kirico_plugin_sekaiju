@@ -18,6 +18,7 @@ from typing import (
     Callable,
     TypeVar,
     Literal,
+    Protocol,
     Any
 )
 from dataclasses import dataclass
@@ -293,6 +294,7 @@ class UniMessage(List[UniMessageSegment]):
     def generate(
         adapter: Union[str, Adapter, Type[Adapter]],
         origin_message: Union[Message, MessageSegment],
+        bot: Optional[Bot] = None,
         **kwargs
     ):
         """
@@ -300,6 +302,7 @@ class UniMessage(List[UniMessageSegment]):
 
         :param adapter: 原 Message 所对应的 adapter 类或实例，或对应名称字符串。
         :param origin_message: 原 Message 或 MessageSegment 实例。
+        :param bot: 原 Message 或 MessageSegment 所对应 Bot 实例，部分转换函数可能要求该参数。
         :return: 构造完成的 UniMessage 对象。
         """
         if isinstance(adapter, str):
@@ -310,13 +313,19 @@ class UniMessage(List[UniMessageSegment]):
             raise ValueError(f"适配器 {adapter_name} 未设定 UniMessage 生成方法。")
         if isinstance(origin_message, MessageSegment):
             origin_message = cast(Type[Message], origin_message.get_message_class())(origin_message)
-        return generate_func(origin_message, **kwargs)
+        return generate_func(msg=origin_message, bot=bot, **kwargs)
 
-    def export(self, adapter: Union[str, Adapter, Type[Adapter]], **kwargs) -> Message:
+    def export(
+            self,
+            adapter: Union[str, Adapter, Type[Adapter]],
+            bot: Optional[Bot] = None,
+            **kwargs
+        ) -> Message:
         """
         通过目标 Bot 实例构造 UniMessage 对象。
 
         :param adapter: 目标 Message 所对应的 adapter 类或实例，或对应名称字符串。
+        :param bot: 目标 Message 所对应 Bot 实例，部分转换函数可能要求该参数。
         :return: 构造完成的目标 Message 对象。
         """
         if isinstance(adapter, str):
@@ -325,33 +334,50 @@ class UniMessage(List[UniMessageSegment]):
             adapter_name = adapter.get_name()
         if not (export_func := EXPORT_MAPPING.get(adapter_name)):
             raise ValueError(f"适配器 {adapter_name} 未设定 UniMessage 导出方法。")
-        return export_func(self, **kwargs)
+        return export_func(uni_msg=self, bot=bot, **kwargs)
+
+TMS = TypeVar("TMS", bound=MessageSegment)
+class Generater(Protocol):
+    def __call__(
+            self,
+            msg: Message[TMS],
+            bot: Optional[Bot] = None,
+            **kwargs
+        ) -> UniMessage: ...
+
+class Exporter(Protocol):
+    def __call__(
+            self,
+            uni_msg: UniMessage,
+            bot: Optional[Bot] = None,
+            **kwargs
+        ) -> Message[TMS]: ...
 
 
-TM = TypeVar("TM", bound = Message)
-
-# TODO 完善此处 Any 类型标注
-GENERATE_MAPPING: dict[str, Callable[[Any], UniMessage]] = {}
+GENERATE_MAPPING: dict[str, Generater] = {}
 '''存放各适配器对应 Message 转换 UniMessage 的方法'''
 
-EXPORT_MAPPING: dict[str, Callable[[UniMessage], Any]] = {}
+EXPORT_MAPPING: dict[str, Exporter] = {}
 '''存放各适配器对应 UniMessage 导出 Message 的方法'''
 
 def add_message_change(
-        adapter_cls: Type[Adapter],
-        generate_func: Callable[[TM], UniMessage],
-        export_func: Callable[[UniMessage], TM],
+        adapter: Union[str, Adapter, Type[Adapter]],
+        generate_func: Generater,
+        export_func: Exporter,
         message_cls: Type[Message]
     ):
     """
     为 Message 类添加对应适配器名称，并将转换函数放入对应字典中。
 
-    :param adapter_cls: 对应的适配器类，用于获取适配器名称。
+    :param adapter: 对应的 adapter 类或实例，或对应名称字符串。
     :param generate_func: 对应 Message 转换 UniMessage 的函数。
     :param export_func: 对应 UniMessage 导出 Message 的函数。
     :param message_cls: 对应适配器的 Message 类。
     """
-    adapter_name = adapter_cls.get_name()
+    if isinstance(adapter, str):
+        adapter_name = adapter
+    else:
+        adapter_name = adapter.get_name()
     setattr(message_cls, "adapter_name", adapter_name)
     GENERATE_MAPPING[adapter_name] = generate_func
     EXPORT_MAPPING[adapter_name] = export_func
@@ -360,6 +386,8 @@ def convert_message(
         message: Union[Message, MessageSegment, UniMessage],
         origin_adapter: Optional[Union[str, Adapter, Type[Adapter]]] = None,
         target_adapter: Optional[Union[str, Adapter, Type[Adapter]]] = None,
+        origin_bot: Optional[Bot] = None,
+        target_bot: Optional[Bot] = None,
         from_origin_kwargs: dict[str, Any] = {},
         to_target_kwargs: dict[str, Any] = {}
     ) -> Union[Message, UniMessage]:
@@ -369,6 +397,8 @@ def convert_message(
     :param message: 需要转化的消息。
     :param origin_adapter: 原消息适配器类、实例或名称。留空则代表从 UniMessage 导出。
     :param target_adapter: 目标消息适配器类、实例或名称。留空则代表构造为 UniMessage.
+    :param origin_bot: 原消息所对应 Bot 实例，部分转换函数可能要求该参数。也可将参数放在 from_origin_kwargs 中。
+    :param target_bot: 目标消息所对应 Bot 实例，部分转换函数可能要求该参数。也可将参数放在 to_target_kwargs 中。
     :param from_origin_kwargs: 将原消息转化为 UniMessage 时传入对应转换函数的额外参数。
     :param to_target_kwargs: 将 UniMessage 导出为目标消息时传入对应转换函数的额外参数。
 
@@ -399,22 +429,36 @@ def convert_message(
     
     if origin_adapter_name is not None and target_adapter_name is None:
         if isinstance(message, Message) or isinstance(message, MessageSegment):
-            return UniMessage.generate(origin_adapter_name, message, **from_origin_kwargs)
+            return UniMessage.generate(
+                adapter=origin_adapter_name,
+                origin_message=message,
+                bot=origin_bot,
+                **from_origin_kwargs
+            )
         else:
             raise ValueError("由于需要转化为 UniMessage，参数 massage 应该为 Message 或 MessageSegment 对象。")
     
     if origin_adapter_name is None and target_adapter_name is not None:
         if isinstance(message, UniMessage):
-            return message.export(target_adapter_name, **to_target_kwargs)
+            return message.export(
+                adapter=target_adapter_name,
+                bot=target_bot,
+                **to_target_kwargs
+            )
         else:
             raise ValueError("由于需要导出为 Message，参数 massage 应该为 UniMessage 类对象。")
 
     if (isinstance(message, Message) or isinstance(message, MessageSegment)):
         return UniMessage.generate(
-            cast(str, origin_adapter_name),
-            message,
+            adapter=cast(str, origin_adapter_name),
+            origin_message=message,
+            bot=origin_bot,
             **from_origin_kwargs
-        ).export(cast(str, target_adapter_name), **to_target_kwargs)
+        ).export(
+            adapter=cast(str, target_adapter_name),
+            bot=target_bot,
+            **to_target_kwargs
+        )
     else:
         raise ValueError("由于需要转换 Message，参数 message 应该为 Message 或 MessageSegment 对象。")
 

@@ -19,10 +19,10 @@ from typing import (
     Any
 )
 from pydantic import parse_obj_as
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from nonebot.internal.adapter import Event as BaseEvent
-from nonebot.internal.adapter import Adapter
+from nonebot.internal.adapter import Adapter, Bot
 
 from .uni_message import UniMessage, convert_message
 from ..utils import ascii_encode, ascii_decode, Encoded
@@ -45,10 +45,20 @@ class Item:
         仅当 is_msg=True 时生效。代表指定字段消息的适配器名称，留空代表从 UniMesssage 进行转换。
     :param target_adapter:
         仅当 is_msg=True 时生效。代表目标消息类型的适配器名称，留空代表转化为 UniMesssage。
+    :param origin_bot:
+        原消息所对应 Bot 实例，部分转换函数可能要求该参数。也可将参数放在 from_origin_kwargs 中。
+    :param target_bot:
+        目标消息所对应 Bot 实例，部分转换函数可能要求该参数。也可将参数放在 to_target_kwargs 中。
+    :param from_origin_kwargs:
+        将原消息转化为 UniMessage 时传入对应转换函数的额外参数。
+    :param to_target_kwargs:
+        将 UniMessage 导出为目标消息时传入对应转换函数的额外参数。
     :param encode: 
         将 call 用 utils.ascii_encode 函数覆盖，用于适配 id 等 Union[int,str] 字段。
+        一般用于转入通用模式时。
     :param decode: 
         将 call 用 utils.ascii_decode 函数覆盖，用于适配 id 等 Union[int,str] 字段。
+        一般用于从通用模式转出。
     """
 
     name: str
@@ -57,6 +67,10 @@ class Item:
     is_msg: bool = False
     origin_adapter: Optional[Union[str, Adapter, Type[Adapter]]] = None
     target_adapter: Optional[Union[str, Adapter, Type[Adapter]]] = None
+    origin_bot: Optional[Bot] = None
+    target_bot: Optional[Bot] = None
+    from_origin_kwargs: dict[str, Any] = field(default_factory=dict)
+    to_target_kwargs: dict[str, Any] = field(default_factory=dict)
     encode: bool = False
     decode: bool = False
 
@@ -67,7 +81,15 @@ class Item:
             if self.origin_adapter is None and self.target_adapter is None:
                 raise ValueError("Item.origin_adapter 与 Item.target_adapter 需要至少有一个不为空。")
             def inner(msg):
-                return convert_message(msg, self.origin_adapter, self.target_adapter)
+                return convert_message(
+                    message=msg,
+                    origin_adapter=self.origin_adapter,
+                    target_adapter=self.target_adapter,
+                    origin_bot=self.origin_bot,
+                    target_bot=self.target_bot,
+                    from_origin_kwargs=self.from_origin_kwargs,
+                    to_target_kwargs=self.to_target_kwargs
+                )
             self.call = inner
         if self.encode or self.decode:
             if self.is_msg:
