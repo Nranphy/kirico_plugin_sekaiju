@@ -3,6 +3,14 @@ from typing import Union, Optional
 from pathlib import Path
 
 
+# TODO 后续可能支持多平台用户绑定
+class PlatformUserData(BaseModel):
+    '''各平台用户信息'''
+
+    id: Union[int, str]
+    '''平台用户 id'''
+    name: str
+    '''平台用户昵称'''
 
 class User(BaseModel):
     '''用户信息模型'''
@@ -15,10 +23,10 @@ class User(BaseModel):
     '''用户头像'''
     level: int
     '''用户等级'''
+    platform_data: dict[str, PlatformUserData] = {}
+    '''用户各平台信息'''
 
-    qq_id: Optional[str] = None
-    villa_id: Optional[str] = None
-
+# TODO 后续可通过本地存储群聊、频道、房间信息满足其他需求
 class Group(BaseModel):
     '''群聊信息模型'''
 
