@@ -336,22 +336,26 @@ class UniMessage(List[UniMessageSegment]):
             raise ValueError(f"适配器 {adapter_name} 未设定 UniMessage 导出方法。")
         return export_func(uni_msg=self, bot=bot, **kwargs)
 
-TMS = TypeVar("TMS", bound=MessageSegment)
-class Generater(Protocol):
+
+TM1 = TypeVar("TM1", bound=Message, contravariant=True)
+TM2 = TypeVar("TM2", bound=Message, covariant=True)
+TB = TypeVar("TB", bound=Bot, contravariant=True)
+
+class Generater(Protocol[TM1, TB]):
     def __call__(
             self,
-            ori_msg: Message,
-            bot: Optional[Bot] = None,
+            ori_msg: TM1,
+            bot: Optional[TB] = None,
             **kwargs
         ) -> UniMessage: ...
 
-class Exporter(Protocol):
+class Exporter(Protocol[TM2, TB]):
     def __call__(
             self,
             uni_msg: UniMessage,
-            bot: Optional[Bot] = None,
+            bot: Optional[TB] = None,
             **kwargs
-        ) -> Message: ...
+        ) -> TM2: ...
 
 
 GENERATE_MAPPING: dict[str, Generater] = {}
