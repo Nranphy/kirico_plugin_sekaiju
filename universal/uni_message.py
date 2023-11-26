@@ -328,6 +328,7 @@ class UniMessage(List[UniMessageSegment]):
         adapter: Union[str, Adapter, Type[Adapter]],
         origin_message: Union[Message, MessageSegment],
         bot: Optional[Bot] = None,
+        encode: bool = True,
         **kwargs
     ):
         """
@@ -336,6 +337,7 @@ class UniMessage(List[UniMessageSegment]):
         :param adapter: 原 Message 所对应的 adapter 类或实例，或对应名称字符串。
         :param origin_message: 原 Message 或 MessageSegment 实例。
         :param bot: 原 Message 或 MessageSegment 所对应 Bot 实例，部分转换函数可能要求该参数。
+        :param encode: 是否要对原 Message 中的 id 进行编码。
         :return: 构造完成的 UniMessage 对象。
         """
         if isinstance(adapter, str):
@@ -346,12 +348,13 @@ class UniMessage(List[UniMessageSegment]):
             raise ValueError(f"适配器 {adapter_name} 未设定 UniMessage 生成方法。")
         if isinstance(origin_message, MessageSegment):
             origin_message = cast(Type[Message], origin_message.get_message_class())(origin_message)
-        return generate_func(ori_msg=origin_message, bot=bot, **kwargs)
+        return generate_func(ori_msg=origin_message, bot=bot, encode=encode, **kwargs)
 
     def export(
             self,
             adapter: Union[str, Adapter, Type[Adapter]],
             bot: Optional[Bot] = None,
+            decode: bool = True,
             **kwargs
         ) -> Message:
         """
@@ -359,6 +362,7 @@ class UniMessage(List[UniMessageSegment]):
 
         :param adapter: 目标 Message 所对应的 adapter 类或实例，或对应名称字符串。
         :param bot: 目标 Message 所对应 Bot 实例，部分转换函数可能要求该参数。
+        :param decode: 是否要对 UniMessage 中的 id 进行解码。
         :return: 构造完成的目标 Message 对象。
         """
         if isinstance(adapter, str):
@@ -367,7 +371,7 @@ class UniMessage(List[UniMessageSegment]):
             adapter_name = adapter.get_name()
         if not (export_func := EXPORT_MAPPING.get(adapter_name)):
             raise ValueError(f"适配器 {adapter_name} 未设定 UniMessage 导出方法。")
-        return export_func(uni_msg=self, bot=bot, **kwargs)
+        return export_func(uni_msg=self, bot=bot, decode=decode, **kwargs)
 
 
 TM1 = TypeVar("TM1", bound=Message, contravariant=True)
@@ -379,6 +383,7 @@ class Generater(Protocol[TM1, TB]):
             self,
             ori_msg: TM1,
             bot: Optional[TB] = None,
+            encode: bool = True,
             **kwargs
         ) -> UniMessage: ...
 
@@ -387,6 +392,7 @@ class Exporter(Protocol[TM2, TB]):
             self,
             uni_msg: UniMessage,
             bot: Optional[TB] = None,
+            decode: bool = True,
             **kwargs
         ) -> TM2: ...
 
@@ -425,6 +431,8 @@ def convert_message(
         target_adapter: Optional[Union[str, Adapter, Type[Adapter]]] = None,
         origin_bot: Optional[Bot] = None,
         target_bot: Optional[Bot] = None,
+        from_origin_encode: bool = True,
+        to_target_decode: bool = True,
         from_origin_kwargs: dict[str, Any] = {},
         to_target_kwargs: dict[str, Any] = {}
     ) -> Union[Message, UniMessage]:
@@ -436,6 +444,8 @@ def convert_message(
     :param target_adapter: 目标消息适配器类、实例或名称。留空则代表构造为 UniMessage.
     :param origin_bot: 原消息所对应 Bot 实例，部分转换函数可能要求该参数。也可将参数放在 from_origin_kwargs 中。
     :param target_bot: 目标消息所对应 Bot 实例，部分转换函数可能要求该参数。也可将参数放在 to_target_kwargs 中。
+    :param from_origin_encode: 将原消息转化为 UniMessage 时是否要对其中的 id 进行编码。也可将参数放在 from_origin_kwargs 中。
+    :param to_target_decode: 将 UniMessage 导出为目标消息时是否要对其中的 id 进行解码。也可将参数放在 to_target_kwargs 中。
     :param from_origin_kwargs: 将原消息转化为 UniMessage 时传入对应转换函数的额外参数。
     :param to_target_kwargs: 将 UniMessage 导出为目标消息时传入对应转换函数的额外参数。
 
@@ -470,6 +480,7 @@ def convert_message(
                 adapter=origin_adapter_name,
                 origin_message=message,
                 bot=origin_bot,
+                encode=from_origin_encode,
                 **from_origin_kwargs
             )
         else:
@@ -480,6 +491,7 @@ def convert_message(
             return message.export(
                 adapter=target_adapter_name,
                 bot=target_bot,
+                decode=to_target_decode,
                 **to_target_kwargs
             )
         else:
@@ -490,10 +502,12 @@ def convert_message(
             adapter=cast(str, origin_adapter_name),
             origin_message=message,
             bot=origin_bot,
+            encode=from_origin_encode,
             **from_origin_kwargs
         ).export(
             adapter=cast(str, target_adapter_name),
             bot=target_bot,
+            decode=to_target_decode,
             **to_target_kwargs
         )
     else:
