@@ -57,8 +57,16 @@ class UniMessageSegment:
         return UniReply("reply", origin_ms, msg_id)
     
     @staticmethod
-    def at(origin_ms: MessageSegment, target_user: Encoded, to_me: bool=False) -> "UniAt":
-        return UniAt("at", origin_ms, target_user, to_me)
+    def at_all(origin_ms: MessageSegment, to_me: bool=True) -> "UniAtAll":
+        return UniAtAll("at_all", origin_ms, to_me)
+    
+    @staticmethod
+    def at_user(origin_ms: MessageSegment, target_user: Encoded, to_me: bool=False) -> "UniAtUser":
+        return UniAtUser("at_user", origin_ms, target_user, to_me)
+    
+    @staticmethod
+    def at_me(origin_ms: MessageSegment, to_me: bool=True) -> "UniAtMe":
+        return UniAtMe("at_me", origin_ms, to_me)
     
     @staticmethod
     def image(
@@ -150,12 +158,35 @@ class UniReply(UniMessageSegment):
 class UniAt(UniMessageSegment):
     '''at 信息'''
 
+
+@dataclass
+class UniAtAll(UniAt):
+    '''at 全体成员信息'''
+
+    to_me: bool = True
+
+    type: Literal["at_all"] = "at_all"
+
+
+@dataclass
+class UniAtUser(UniAt):
+    '''at 用户信息'''
+
     target_user: Encoded
     '''编码后的 at 目标用户 id'''
 
     to_me: bool = False
 
-    type: Literal["at"] = "at"
+    type: Literal["at_user"] = "at_user"
+
+
+@dataclass
+class UniAtMe(UniAt):
+    '''at 机器人信息'''
+
+    to_me: bool = True
+
+    type: Literal["at_me"] = "at_me"
 
 
 @dataclass
@@ -274,7 +305,9 @@ class UniOther(UniMessageSegment):
 uni_ms_mapping: dict[str, Type[UniMessageSegment]] = {
     "text": UniText,
     "reply": UniReply,
-    "at": UniAt,
+    "at_all": UniAtAll,
+    "at_user": UniAtUser,
+    "at_me": UniAtMe,
     "image": UniImage,
     "voice": UniVoice,
     "video": UniVideo,
@@ -471,7 +504,9 @@ __all__ = [
     "UniMessageSegment",
     "UniText",
     "UniReply",
-    "UniAt",
+    "UniAtAll",
+    "UniAtUser",
+    "UniAtMe",
     "UniMedia",
     "UniImage",
     "UniVoice",
