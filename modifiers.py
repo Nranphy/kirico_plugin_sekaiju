@@ -190,7 +190,9 @@ class MatcherModifier(Modifier):
                         message=message,
                         origin_adapter=msg_adapter,
                         target_adapter=target_adapter,
-                        target_bot=bot
+                        target_bot=bot,
+                        from_origin_encode=False,
+                        to_target_decode=True
                     ))
             return await func(cls, message, **kwargs)
         return inner
