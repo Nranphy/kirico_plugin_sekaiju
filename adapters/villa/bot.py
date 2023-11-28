@@ -31,10 +31,16 @@ class VillaUniBot(UniBot):
         **kwargs: Any,
     ) -> Any:
         if isinstance(message, UniMessage):
-            _message = message.export(self.origin_bot.adapter.get_name())
+            _message = message.export(
+                self.origin_bot.adapter.get_name(),
+                bot=self.origin_bot,
+                villa_id=getattr(event.origin_event, "villa_id") if hasattr(event.origin_event, "villa_id") else None
+            )
         else:
             _message = message
         return await self.origin_bot.send(event.origin_event, _message, **kwargs)
+    
+    # TODO call_api 方法未实现
 
 class VillaFakeBot(FakeBot, VillaBot):
 
@@ -66,11 +72,17 @@ class VillaFakeBot(FakeBot, VillaBot):
         if isinstance(message, MessageSegment):
             message = message.get_message_class()(message)
         if isinstance(message, Message):
-            _message = UniMessage.generate(VillaAdapter.get_name(), message)
+            _message = UniMessage.generate(
+                VillaAdapter.get_name(),
+                message,
+                encode=False
+            )
         else:
             _message = message
-        return await  self.uni_bot.send(
+        return await self.uni_bot.send(
             getattr(event, "get_uni_event")(),
             _message,
             **kwargs
-        )
+        )    
+    
+    # TODO Villa Bot 其他方法未实现
