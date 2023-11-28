@@ -154,6 +154,7 @@ class EventParamModifier(ParamModifier):
             event: Event,
             **kwargs: Any
         ) -> Any:
+            # TODO 优化构造方式，最好情况应该构造为最合适的 target_event_cls 的子类
             if hasattr(self, "target_event_cls") and getattr(self, "target_event_cls") is not None:
                 return getattr(cast(Type[Event], getattr(self, "target_event_cls")), "parse_fake_event")(getattr(event, "get_uni_event")())
             return await func(self, event, **kwargs)
