@@ -247,7 +247,7 @@ class UniGroupIncreaseNoticeEvent(UniNoticeEvent):
     group_id: Encoded
     '''编码后的群聊 ID'''
     
-    operator_id: Encoded
+    operator_id: Optional[Encoded] = None
     '''编码后的操作者 ID'''
     
     user_id: Encoded
