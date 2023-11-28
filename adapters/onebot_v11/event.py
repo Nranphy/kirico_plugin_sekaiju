@@ -55,7 +55,7 @@ add_uni_event_items(
         "post_type": Item("post_type"),
         "event_id": lambda e: e.get_session_id(),
         "time": Item("time"),
-        "self_id": Item("self_id"),
+        "self_id": Item("self_id", encode=True),
     },
     event_export_mapping:={
         "time": Item("time"),
@@ -71,9 +71,9 @@ add_uni_event_items(
         **event_parse_mapping,
         "post_type": "message",
         "message_type": Item("message_type"),
-        "message_id": Item("message_id"),
-        "user_id": Item("user_id"),
-        "message": Item("message", is_msg=True, origin_adapter=Adapter),
+        "message_id": Item("message_id", encode=True),
+        "user_id": Item("user_id", encode=True),
+        "message": Item("message", is_msg=True, origin_adapter=Adapter, encode=True),
         "to_me": Item("to_me"),
         "raw_message": Item("raw_message")
     },
@@ -112,7 +112,7 @@ add_uni_event_items(
     {
         **message_event_parse_mapping,
         "sub_type": Item("sub_type"),
-        "group_id": Item("group_id")
+        "group_id": Item("group_id", encode=True)
     },
     {
         **message_event_export_mapping,
@@ -143,9 +143,9 @@ add_uni_event_items(
         **notice_event_parse_mapping,
         "notice_type": "group_increase",
         "sub_type": Item("sub_type"),
-        "group_id": Item("group_id"),
-        "operator_id": Item("operator_id"),
-        "user_id": Item("user_id")
+        "group_id": Item("group_id", encode=True),
+        "operator_id": Item("operator_id", encode=True),
+        "user_id": Item("user_id", encode=True)
     },
     {
         **notice_event_export_mapping,
@@ -164,9 +164,9 @@ add_uni_event_items(
         **notice_event_parse_mapping,
         "notice_type": "group_decrease",
         "sub_type": Item("sub_type"),
-        "group_id": Item("group_id"),
-        "operator_id": Item("operator_id"),
-        "user_id": Item("user_id")
+        "group_id": Item("group_id", encode=True),
+        "operator_id": Item("operator_id", encode=True),
+        "user_id": Item("user_id", encode=True)
     },
     {
         **notice_event_export_mapping,
@@ -185,9 +185,9 @@ add_uni_event_items(
         **notice_event_parse_mapping,
         "notice_type": "group_ban",
         "sub_type": Item("sub_type"),
-        "group_id": Item("group_id"),
-        "operator_id": Item("operator_id"),
-        "user_id": Item("user_id"),
+        "group_id": Item("group_id", encode=True),
+        "operator_id": Item("operator_id", encode=True),
+        "user_id": Item("user_id", encode=True),
         "duration": Item("duration")
     },
     {
@@ -203,8 +203,8 @@ add_uni_event_items(
 
 recall_notice_event_parse_mapping = {
     **notice_event_parse_mapping,
-    "user_id": Item("user_id"),
-    "message_id": Item("message_id")
+    "user_id": Item("user_id", encode=True),
+    "message_id": Item("message_id", encode=True)
 }
 
 add_uni_event_items(
@@ -213,8 +213,8 @@ add_uni_event_items(
     {
         **recall_notice_event_parse_mapping,
         "notice_type": "group_recall",
-        "group_id": Item("group_id"),
-        "operator_id": Item("operator_id")
+        "group_id": Item("group_id", encode=True),
+        "operator_id": Item("operator_id", encode=True)
     },
     {
         **notice_event_export_mapping,
@@ -245,7 +245,7 @@ add_uni_event_items(
     {
         **notice_event_parse_mapping,
         "notice_type": "friend_add",
-        "user_id": Item("user_id")
+        "user_id": Item("user_id", encode=True)
     },
     {
         **notice_event_export_mapping,
@@ -260,9 +260,9 @@ add_uni_event_items(
     {
         **notice_event_parse_mapping,
         "notice_type": "simple_interaction",
-        "group_id": Item("group_id"),
-        "user_id": Item("user_id"),
-        "target_id": Item("target_id")
+        "group_id": Item("group_id", encode=True),
+        "user_id": Item("user_id", encode=True),
+        "target_id": Item("target_id", encode=True)
     },
     {
         **notice_event_export_mapping,
@@ -295,7 +295,7 @@ add_uni_event_items(
     {
         **request_event_parse_mapping,
         "request_type": "friend",
-        "user_id": Item("user_id"),
+        "user_id": Item("user_id", encode=True),
         "comment": Item("comment"),
     },
     {
@@ -315,8 +315,8 @@ add_uni_event_items(
         **request_event_parse_mapping,
         "request_type": "group",
         "sub_type": Item("sub_type"),
-        "group_id": Item("group_id"),
-        "user_id": Item("user_id"),
+        "group_id": Item("group_id", encode=True),
+        "user_id": Item("user_id", encode=True),
         "comment": Item("comment")
     },
     {
