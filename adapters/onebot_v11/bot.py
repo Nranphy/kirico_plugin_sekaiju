@@ -52,6 +52,7 @@ class OneBotv11FakeBot(FakeBot, OneBotv11Bot):
 
     @override
     def __init__(self, uni_bot: UniBot):
+        # TODO 未通过父类 Bot.__init__ 方法构造
         super().__init__(uni_bot)
         self.adapter = adapter
     
