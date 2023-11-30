@@ -73,7 +73,7 @@ add_uni_event_items(
         "message_type": Item("message_type"),
         "message_id": Item("message_id", encode=True),
         "user_id": Item("user_id", encode=True),
-        "message": Item("message", is_msg=True, origin_adapter=Adapter, encode=True),
+        "message": Item("message", is_msg=True, origin_adapter=Adapter),
         "to_me": Item("to_me"),
         "raw_message": Item("raw_message")
     },
