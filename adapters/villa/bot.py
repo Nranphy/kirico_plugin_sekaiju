@@ -9,7 +9,7 @@ from nonebot.adapters.villa.config import BotInfo
 from nonebot.adapters.villa.event import Event
 from nonebot.adapters.villa.message import Message, MessageSegment
 
-from ...universal.uni_bot import UniBot, FakeBot
+from ...universal.uni_bot import UniBot, FakeBot, add_bot_method
 from ...universal.uni_message import UniMessage
 
 if TYPE_CHECKING:
@@ -40,7 +40,14 @@ class VillaUniBot(UniBot):
             _message = message
         return await self.origin_bot.send(event.origin_event, _message, **kwargs)
     
-    # TODO call_api 方法未实现
+    @override
+    async def call_api(
+        self,
+        api: str,
+        **data: Any
+    ) -> Any:
+        ...
+        # TODO call_api 方法未实现
 
 class VillaFakeBot(FakeBot, VillaBot):
 
@@ -85,4 +92,17 @@ class VillaFakeBot(FakeBot, VillaBot):
             **kwargs
         )    
     
-    # TODO Villa Bot 其他方法未实现
+    @override
+    async def call_api(
+        self,
+        api: str,
+        **data: Any
+    ) -> Any:
+        ...
+        # TODO Villa Bot 其他方法未实现
+
+add_bot_method(
+    VillaBot,
+    VillaUniBot,
+    VillaFakeBot
+)

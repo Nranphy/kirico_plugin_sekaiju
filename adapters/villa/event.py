@@ -44,7 +44,7 @@ add_uni_event_items(
         "post_type": lambda e: event_type_mapping.get(e.type, "other"),
         "event_id": Item("id", encode=True),
         "time": Item("send_at"),
-        "self_id": Item("bot_id")
+        "self_id": Item("bot_id", encode=True)
     },
     event_export_mapping:={
         "robot": lambda e: {
