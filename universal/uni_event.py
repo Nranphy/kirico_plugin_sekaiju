@@ -21,6 +21,7 @@ from typing import (
 )
 from pydantic import parse_obj_as, BaseModel
 from dataclasses import dataclass, field
+from collections import defaultdict
 
 from nonebot.internal.adapter import Event as BaseEvent
 from nonebot.internal.adapter import Adapter, Bot
@@ -115,7 +116,11 @@ class UniEvent(BaseModel):
 
     extra: dict[str, Any] = {}
 
-    support_events: ClassVar[list[Type[BaseEvent]]] = []
+    @classmethod
+    @property
+    def support_events(cls) -> list[Type[BaseEvent]]:
+        '''该 UniEvent 所支持的 Event'''
+        return uni_event_support[cls]
 
     @staticmethod
     def _parse_params(
@@ -425,6 +430,8 @@ class UniHeartbeatMetaEvent(UniMetaEvent):
     '''到下次心跳的间隔，单位毫秒'''
 
 
+uni_event_support: dict[Type[UniEvent], list[Type[BaseEvent]]] = defaultdict(list)
+
 
 def add_uni_event_items(
         event_cls: Type[BaseEvent],
@@ -472,7 +479,7 @@ def add_uni_event_items(
         return uni_event.export(cls, cast(dict, cls.export_mapping))
     setattr(event_cls, "get_uni_event", get_uni_event)
     setattr(event_cls, "parse_fake_event", parse_fake_event)
-    uni_event_cls.support_events.append(event_cls)
+    uni_event_support[uni_event_cls].append(event_cls)
     
 
 def check_uni_event_support(event_or_cls: Union[BaseEvent, Type[BaseEvent]]) -> bool:
