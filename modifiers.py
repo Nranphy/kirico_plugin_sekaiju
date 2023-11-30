@@ -195,7 +195,7 @@ class MatcherModifier(Modifier):
                         from_origin_encode=False,
                         to_target_decode=True
                     ))
-            return await func(cls, message, **kwargs)
+            return await func(message, **kwargs)
         return inner
 
     @classmethod
