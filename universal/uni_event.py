@@ -14,6 +14,7 @@ from typing import (
     Type,
     Union,
     Literal,
+    ClassVar,
     Optional,
     Callable,
     Any
@@ -114,7 +115,7 @@ class UniEvent(BaseModel):
 
     extra: dict[str, Any] = {}
 
-    support_events: list[Type[BaseEvent]] = []
+    support_events: ClassVar[list[Type[BaseEvent]]] = []
 
     @staticmethod
     def _parse_params(
