@@ -31,7 +31,7 @@ class VillaUniBot(UniBot):
         **kwargs: Any,
     ) -> Any:
         if isinstance(message, UniMessage):
-            _message = message.export(
+            _message = await message.export(
                 self.origin_bot.adapter.get_name(),
                 bot=self.origin_bot,
                 villa_id=getattr(event.origin_event, "villa_id") if hasattr(event.origin_event, "villa_id") else None
@@ -79,7 +79,7 @@ class VillaFakeBot(FakeBot, VillaBot):
         if isinstance(message, MessageSegment):
             message = message.get_message_class()(message)
         if isinstance(message, Message):
-            _message = UniMessage.generate(
+            _message = await UniMessage.generate(
                 VillaAdapter.get_name(),
                 message,
                 encode=False
@@ -87,7 +87,7 @@ class VillaFakeBot(FakeBot, VillaBot):
         else:
             _message = message
         return await self.uni_bot.send(
-            getattr(event, "get_uni_event")(),
+            cast(UniEvent, getattr(event, "uni_event")),
             _message,
             **kwargs
         )    

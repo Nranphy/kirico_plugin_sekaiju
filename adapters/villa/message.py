@@ -6,7 +6,6 @@ from nonebot.adapters.villa import (
 )
 
 from typing import cast, Optional
-import asyncio
 
 from ...universal.uni_message import *
 from ...utils import ascii_encode, ascii_decode
@@ -14,7 +13,7 @@ from ...utils import ascii_encode, ascii_decode
 from .utils import TIMEOUT
 
 
-def generate_func(
+async def generate_func(
         ori_msg: VillaMessage,
         bot: Optional[VillaBot] = None,
         encode: bool = True,
@@ -48,7 +47,7 @@ def generate_func(
             res.append(UniMessageSegment.other(ms))
     return res
 
-def export_func(
+async def export_func(
         uni_msg: UniMessage,
         bot: Optional[VillaBot] = None,
         decode: bool = True,
@@ -90,7 +89,7 @@ def export_func(
             res.append(VillaMessageSegment.mention_robot(bot_id=bot.self_id, bot_name=bot.nickname))
         elif isinstance(uni_ms, UniImage):
             res.append(VillaMessageSegment.image(
-                url = asyncio.run(asyncio.wait_for(bot.upload_image(uni_ms.bytes), timeout=TIMEOUT)).url,
+                url = (await bot.upload_image(uni_ms.bytes)).url,
                 width = uni_ms.width,
                 height= uni_ms.height
             ))
