@@ -464,8 +464,7 @@ def add_uni_event_items(
     当仅有 export_mapping 留空时，将试图从 parse_mapping 中取出 (str, str) 键值对构建 export_mapping.
     可为 export_mapping 传入空字典避免上述构建过程。
     """
-    # TODO 暂不支持"仅提供 UniEvent 与 Event 之间的单向转换"
-    # TODO 需要改写构造过程
+    # TODO 暂不支持"仅提供 UniEvent 与 Event 之间的单向转换"，需要改写构造过程
     if parse_mapping is not None and export_mapping is None:
         temp_export_mapping = {}
         for k, v in parse_mapping.items():
