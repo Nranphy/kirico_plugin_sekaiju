@@ -18,7 +18,7 @@ from typing import (
     Callable,
     Any
 )
-from pydantic import parse_obj_as
+from pydantic import parse_obj_as, BaseModel
 from dataclasses import dataclass, field
 
 from nonebot.internal.adapter import Event as BaseEvent
@@ -94,7 +94,7 @@ class Item:
                 self.call = ascii_decode
 
 
-class UniEvent(BaseEvent):
+class UniEvent(BaseModel):
     '''事件标记基类'''
 
     origin_event: BaseEvent
