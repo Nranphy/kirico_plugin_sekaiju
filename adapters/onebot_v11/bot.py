@@ -27,7 +27,7 @@ class OneBotv11UniBot(UniBot):
         **kwargs: Any,
     ) -> Any:
         if isinstance(message, UniMessage):
-            _message = message.export(
+            _message = await message.export(
                 adapter_name,
                 bot=self.origin_bot
             )
@@ -66,14 +66,14 @@ class OneBotv11FakeBot(FakeBot, OneBotv11Bot):
         if isinstance(message, str):
             _message = message
         else:
-            _message = UniMessage.generate(
+            _message = await UniMessage.generate(
                 adapter=adapter_name,
                 origin_message=message,
                 encode=False
             )
         return await self.uni_bot.send(
             cast(UniEvent, getattr(event, "uni_event")),
-            cast(Union[str, UniMessage], _message),
+            _message,
             **kwargs
         )
 

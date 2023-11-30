@@ -372,7 +372,7 @@ add_uni_event_items(
     {
         **meta_event_parse_mapping,
         "meta_event_type": "heartbeat",
-        "status": {"online": True, "good": True}, # TODO Item 目前不支持递归
+        "status": {"online": True, "good": True},
         "interval": Item("interval")
     }
 )

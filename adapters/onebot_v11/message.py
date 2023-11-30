@@ -5,15 +5,13 @@ from nonebot.adapters.onebot.v11 import (
     MessageSegment as OneBotv11MessageSegment
 )
 
-from base64 import b64decode
-from pathlib import Path
 from typing import cast, Optional
 
 from ...universal.uni_message import *
 from ...utils import ascii_encode, ascii_decode
 from .utils import s2b, s2f
 
-def generate_func(
+async def generate_func(
         ori_msg: OneBotv11Message,
         bot: Optional[OneBotv11Bot] = None,
         encode: bool = True,
@@ -69,7 +67,7 @@ def generate_func(
     return res
 
 
-def export_func(
+async def export_func(
             uni_msg: UniMessage,
             bot: Optional[OneBotv11Bot] = None,
             decode: bool = True,
