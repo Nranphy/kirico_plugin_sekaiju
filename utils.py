@@ -130,7 +130,7 @@ def path_to_bytes(path: Union[str, Path]) -> bytes:
 
 ascii_map = {ch:str(i+10) for i,ch in enumerate("0123456789"+"ABCDEFGHIJKLMNOPQRSTUVWXYZ"+"abcdefghijklmnopqrstuvwxyz"+"~!@#$%^&*()_+`-=|:<>?[];,./")}
 ascii_inverse_map = {v:k for k,v in ascii_map.items()}
-MAX_STR_LENGTH = 30
+MAX_STR_LENGTH = 300
 Encoded = str
 '''编码后字符串类型'''
 
