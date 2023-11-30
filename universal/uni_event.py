@@ -14,7 +14,6 @@ from typing import (
     Type,
     Union,
     Literal,
-    ClassVar,
     Optional,
     Callable,
     Any
@@ -22,6 +21,7 @@ from typing import (
 from pydantic import parse_obj_as, BaseModel
 from dataclasses import dataclass, field
 from collections import defaultdict
+from inspect import iscoroutinefunction
 
 from nonebot.internal.adapter import Event as BaseEvent
 from nonebot.internal.adapter import Adapter, Bot
@@ -76,15 +76,15 @@ class Item:
         if self.is_msg:
             if self.origin_adapter is None and self.target_adapter is None:
                 raise ValueError("Item.origin_adapter 与 Item.target_adapter 需要至少有一个不为空。")
-            def inner(msg):
-                return convert_message(
+            async def inner_1(msg):
+                return await convert_message(
                     message=msg,
                     origin_adapter=self.origin_adapter,
                     target_adapter=self.target_adapter,
                     from_origin_kwargs=self.from_origin_kwargs,
                     to_target_kwargs=self.to_target_kwargs
                 )
-            self.call = inner
+            self.call = inner_1
         if self.encode or self.decode:
             if self.is_msg:
                 raise ValueError("Item.is_msg 与 Item.encode、Item.decode 不能同时为 True.")
@@ -94,6 +94,12 @@ class Item:
                 self.call = ascii_encode
             elif self.decode:
                 self.call = ascii_decode
+        if self.call is not None and not iscoroutinefunction(self.call):
+            def inner_2(func):
+                async def inner_3(*args, **kwargs):
+                    return func(*args, **kwargs)
+                return inner_3
+            self.call = inner_2(self.call)
 
 
 class UniEvent(BaseModel):
@@ -123,7 +129,7 @@ class UniEvent(BaseModel):
         return uni_event_support[cls]
 
     @staticmethod
-    def _parse_params(
+    async def _parse_params(
         origin_event: BaseEvent,
         mapping: dict[str, Union[Item, Callable, Any]]
     ) -> dict[str, Any]:
@@ -132,7 +138,7 @@ class UniEvent(BaseModel):
             if isinstance(v, Item):
                 params[k] = getattr(origin_event, v.name, v.default)
                 if v.call is not None:
-                    params[k] = v.call(params[k])
+                    params[k] = await v.call(params[k])
             elif isinstance(v, Callable):
                 params[k] = v(origin_event)
             else:
@@ -141,7 +147,7 @@ class UniEvent(BaseModel):
         return params
 
     @classmethod
-    def parse(
+    async def parse(
         cls,
         origin_event: BaseEvent,
         mapping: dict[str, Union[Item, Callable, Any]]
@@ -149,11 +155,11 @@ class UniEvent(BaseModel):
         '''用 Event 构建 UniEvent'''
         uni_event = parse_obj_as(
             cls,
-            cls._parse_params(origin_event, mapping)
+            await cls._parse_params(origin_event, mapping)
         )
         return uni_event
 
-    def _export_params(
+    async def _export_params(
             self,
             mapping: dict[str, Union[Item, Callable, Any]]
         ) -> dict[str, Any]:
@@ -162,14 +168,14 @@ class UniEvent(BaseModel):
             if isinstance(v, Item):
                 params[k] = getattr(self, v.name, v.default)
                 if v.call is not None:
-                    params[k] = v.call(params[k])
+                    params[k] = await v.call(params[k])
             elif isinstance(v, Callable):
                 params[k] = v(self)
             else:
                 params[k] = v
         return params
     
-    def export(
+    async def export(
             self,
             event_cls: Type[BaseEvent],
             mapping: dict[str, Union[Item, Callable, Any]]
@@ -177,7 +183,7 @@ class UniEvent(BaseModel):
         '''将 UniEvent 导出为目标 Event'''
         event = parse_obj_as(
             event_cls,
-            self._export_params(mapping)
+            await self._export_params(mapping)
         )
         setattr(event, "uni_event", self)
         return event
@@ -472,11 +478,11 @@ def add_uni_event_items(
     setattr(event_cls, "uni_event", uni_event_cls)
     setattr(event_cls, "parse_mapping", parse_mapping)
     setattr(event_cls, "export_mapping", export_mapping)
-    def get_uni_event(self):
-        return cast(Type[UniEvent], self.uni_event).parse(self, cast(dict, self.parse_mapping))
+    async def get_uni_event(self):
+        return await cast(Type[UniEvent], self.uni_event).parse(self, cast(dict, self.parse_mapping))
     @classmethod
-    def parse_fake_event(cls, uni_event: UniEvent):
-        return uni_event.export(cls, cast(dict, cls.export_mapping))
+    async def parse_fake_event(cls, uni_event: UniEvent):
+        return await uni_event.export(cls, cast(dict, cls.export_mapping))
     setattr(event_cls, "get_uni_event", get_uni_event)
     setattr(event_cls, "parse_fake_event", parse_fake_event)
     uni_event_support[uni_event_cls].append(event_cls)

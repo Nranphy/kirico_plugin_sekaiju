@@ -15,7 +15,6 @@ from typing import (
     Type,
     Union,
     Optional,
-    Callable,
     TypeVar,
     Literal,
     Protocol,
@@ -324,7 +323,7 @@ class UniMessage(List[UniMessageSegment]):
         self.origin_message = origin_message
 
     @staticmethod
-    def generate(
+    async def generate(
         adapter: Union[str, Adapter, Type[Adapter]],
         origin_message: Union[Message, MessageSegment],
         bot: Optional[Bot] = None,
@@ -348,9 +347,9 @@ class UniMessage(List[UniMessageSegment]):
             raise ValueError(f"适配器 {adapter_name} 未设定 UniMessage 生成方法。")
         if isinstance(origin_message, MessageSegment):
             origin_message = cast(Type[Message], origin_message.get_message_class())(origin_message)
-        return generate_func(ori_msg=origin_message, bot=bot, encode=encode, **kwargs)
+        return await generate_func(ori_msg=origin_message, bot=bot, encode=encode, **kwargs)
 
-    def export(
+    async def export(
             self,
             adapter: Union[str, Adapter, Type[Adapter]],
             bot: Optional[Bot] = None,
@@ -371,7 +370,7 @@ class UniMessage(List[UniMessageSegment]):
             adapter_name = adapter.get_name()
         if not (export_func := EXPORT_MAPPING.get(adapter_name)):
             raise ValueError(f"适配器 {adapter_name} 未设定 UniMessage 导出方法。")
-        return export_func(uni_msg=self, bot=bot, decode=decode, **kwargs)
+        return await export_func(uni_msg=self, bot=bot, decode=decode, **kwargs)
 
 
 TM1 = TypeVar("TM1", bound=Message, contravariant=True)
@@ -379,7 +378,7 @@ TM2 = TypeVar("TM2", bound=Message, covariant=True)
 TB = TypeVar("TB", bound=Bot, contravariant=True)
 
 class Generater(Protocol[TM1, TB]):
-    def __call__(
+    async def __call__(
             self,
             ori_msg: TM1,
             bot: Optional[TB] = None,
@@ -388,7 +387,7 @@ class Generater(Protocol[TM1, TB]):
         ) -> UniMessage: ...
 
 class Exporter(Protocol[TM2, TB]):
-    def __call__(
+    async def __call__(
             self,
             uni_msg: UniMessage,
             bot: Optional[TB] = None,
@@ -425,7 +424,7 @@ def add_message_change(
     GENERATE_MAPPING[adapter_name] = generate_func
     EXPORT_MAPPING[adapter_name] = export_func
 
-def convert_message(
+async def convert_message(
         message: Union[Message, MessageSegment, UniMessage],
         origin_adapter: Optional[Union[str, Adapter, Type[Adapter]]] = None,
         target_adapter: Optional[Union[str, Adapter, Type[Adapter]]] = None,
@@ -476,7 +475,7 @@ def convert_message(
     
     if origin_adapter_name is not None and target_adapter_name is None:
         if isinstance(message, Message) or isinstance(message, MessageSegment):
-            return UniMessage.generate(
+            return await UniMessage.generate(
                 adapter=origin_adapter_name,
                 origin_message=message,
                 bot=origin_bot,
@@ -488,7 +487,7 @@ def convert_message(
     
     if origin_adapter_name is None and target_adapter_name is not None:
         if isinstance(message, UniMessage):
-            return message.export(
+            return await message.export(
                 adapter=target_adapter_name,
                 bot=target_bot,
                 decode=to_target_decode,
@@ -498,13 +497,13 @@ def convert_message(
             raise ValueError("由于需要导出为 Message，参数 massage 应该为 UniMessage 类对象。")
 
     if (isinstance(message, Message) or isinstance(message, MessageSegment)):
-        return UniMessage.generate(
+        return await (await UniMessage.generate(
             adapter=cast(str, origin_adapter_name),
             origin_message=message,
             bot=origin_bot,
             encode=from_origin_encode,
             **from_origin_kwargs
-        ).export(
+        )).export(
             adapter=cast(str, target_adapter_name),
             bot=target_bot,
             decode=to_target_decode,

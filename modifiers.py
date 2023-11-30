@@ -159,9 +159,8 @@ class EventParamModifier(ParamModifier):
             event: Event,
             **kwargs: Any
         ) -> Any:
-            # TODO 优化构造方式，最好情况应该构造为最合适的 target_event_cls 的子类
             if hasattr(self, "target_event_cls") and getattr(self, "target_event_cls") is not None:
-                return getattr(cast(Type[Event], getattr(self, "target_event_cls")), "parse_fake_event")(getattr(event, "get_uni_event")())
+                return await getattr(cast(Type[Event], getattr(self, "target_event_cls")), "parse_fake_event")(await getattr(event, "get_uni_event")())
             return await func(self, event, **kwargs)
         return inner
     
@@ -192,7 +191,7 @@ class MatcherModifier(Modifier):
                 target_adapter = current_bot.get().adapter.get_name()
                 if msg_adapter != target_adapter:
                     bot = current_bot.get()
-                    message = cast(Message, convert_message(
+                    message = cast(Message, await convert_message(
                         message=message,
                         origin_adapter=msg_adapter,
                         target_adapter=target_adapter,
