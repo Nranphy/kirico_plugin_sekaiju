@@ -137,10 +137,15 @@ class EventParamModifier(ParamModifier):
                             check_uni_event_support(param_type)
                         ]
                     ):
-                        param_uni_event = getattr(param_type, "uni_event")
-                        current_uni_event = getattr(type(event), "uni_event")
+                        param_uni_event: Type[UniEvent] = getattr(param_type, "uni_event")
+                        current_uni_event: Type[UniEvent] = getattr(type(event), "uni_event")
                         if issubclass(current_uni_event, param_uni_event):
-                            setattr(self, "target_event_cls", param_type)
+                            for support_event in current_uni_event.support_events:
+                                if issubclass(support_event, param_type):
+                                    setattr(self, "target_event_cls", support_event)
+                                    break
+                            else:
+                                setattr(self, "target_event_cls", param_type)
                             return
                 except TypeError:
                     pass

@@ -114,6 +114,8 @@ class UniEvent(BaseModel):
 
     extra: dict[str, Any] = {}
 
+    support_events: list[Type[BaseEvent]] = []
+
     @staticmethod
     def _parse_params(
         origin_event: BaseEvent,
@@ -469,6 +471,7 @@ def add_uni_event_items(
         return uni_event.export(cls, cast(dict, cls.export_mapping))
     setattr(event_cls, "get_uni_event", get_uni_event)
     setattr(event_cls, "parse_fake_event", parse_fake_event)
+    uni_event_cls.support_events.append(event_cls)
     
 
 def check_uni_event_support(event_or_cls: Union[BaseEvent, Type[BaseEvent]]) -> bool:
