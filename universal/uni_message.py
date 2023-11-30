@@ -141,7 +141,7 @@ class UniText(UniMessageSegment):
 
     text: str
 
-    type: Literal["text"] = "text"
+    type: Literal["text"]
 
 
 @dataclass
@@ -151,7 +151,7 @@ class UniReply(UniMessageSegment):
     msg_id: Encoded
     '''编码后的回复消息 ID'''
 
-    type: Literal["reply"] = "reply"
+    type: Literal["reply"]
 
 
 @dataclass
@@ -165,7 +165,7 @@ class UniAtAll(UniAt):
 
     to_me: bool = True
 
-    type: Literal["at_all"] = "at_all"
+    type: Literal["at_all"]
 
 
 @dataclass
@@ -177,7 +177,7 @@ class UniAtUser(UniAt):
 
     to_me: bool = False
 
-    type: Literal["at_user"] = "at_user"
+    type: Literal["at_user"]
 
 
 @dataclass
@@ -186,7 +186,7 @@ class UniAtMe(UniAt):
 
     to_me: bool = True
 
-    type: Literal["at_me"] = "at_me"
+    type: Literal["at_me"]
 
 
 @dataclass
@@ -265,7 +265,7 @@ class UniMedia(UniMessageSegment):
 class UniImage(UniMedia):
     '''图像信息'''
 
-    type: Literal["image"] = "image"
+    type: Literal["image"]
 
     @property
     def size(self) -> tuple[int, int]:
@@ -285,21 +285,21 @@ class UniImage(UniMedia):
 class UniVoice(UniMedia):
     '''音频信息'''
 
-    type: Literal["voice"] = "voice"
+    type: Literal["voice"]
 
 
 @dataclass
 class UniVideo(UniMedia):
     '''视频信息'''
 
-    type: Literal["video"] = "video"
+    type: Literal["video"]
 
 
 @dataclass
 class UniOther(UniMessageSegment):
     '''其他信息类型'''
 
-    type: Literal["other"] = "other"
+    type: Literal["other"]
 
 
 uni_ms_mapping: dict[str, Type[UniMessageSegment]] = {
