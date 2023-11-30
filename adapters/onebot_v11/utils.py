@@ -24,9 +24,9 @@ def s2b(s:str, default:bool = True) -> bool:
 def s2f(s:str) -> dict[str, Any]:
     '''将媒体 MessageSegment 的 file 字段转化为参数字典'''
     res = {}
-    if s.startswith("file:///"):
-        res["_path"] = Path(s.strip("file:///"))
+    if s.startswith("file://"):
+        res["path"] = Path(s.removeprefix("file://"))
     if s.startswith("base64://"):
-        b64 = s.strip("base64://")
-        res["_bytes"] = b64decode(b64)
+        b64 = s.removeprefix("base64://")
+        res["bytes"] = b64decode(b64)
     return res
